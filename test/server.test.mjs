@@ -56,7 +56,13 @@ test('10 Pages maximum; Unicode name filter works',async t=>{
 });
 test('Reject DNS rebinding hosts, cross origin, and missing anti-CSRF header',async t=>{
  const {request,root}=await fixture(t);
- assert.equal((await request('/api/state','GET',undefined,{Host:'attacker.example'})).status,403);
+ // fetch normalizes the Host header; send a raw HTTP request to test DNS-rebinding protection.
+ const {request:rawRequest}=await import('node:http');
+ const forgedHostStatus=await new Promise((resolve,reject)=>{
+   const r=rawRequest(root+'/api/state',{headers:{Host:'attacker.example'}},resp=>{resp.resume();resp.on('end',()=>resolve(resp.statusCode));});
+   r.on('error',reject);r.end();
+ });
+ assert.equal(forgedHostStatus,403);
  assert.equal((await request('/api/pages','POST',{name:'evil'},{Origin:'https://attacker.example'})).status,403);
  const r=await fetch(root+'/api/pages',{method:'POST',headers:{'Content-Type':'application/json',Origin:root},body:'{"name":"bad"}'});
  assert.equal(r.status,403);
