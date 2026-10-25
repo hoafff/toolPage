@@ -142,9 +142,12 @@ export async function uploadPageVideo({job,pageToken,fetchImpl=globalThis.fetch,
   if(info.size>MAX_FILE_BYTES)throw apiError(413,'VIDEO_TOO_LARGE_DIRECT_UPLOAD');
   const boundary='toolPage-'+randomUUID().replaceAll('-','');
   const cleanField = str=>String(str).replace(/[\r\n]/g,' ');
+  const ext=path.extname(job.file_name).toLowerCase();
+  const uploadFilename=ext==='.mov'?'video.mov':ext==='.m4v'?'video.m4v':'video.mp4';
+  const uploadMime=ext==='.mov'?'video/quicktime':ext==='.m4v'?'video/x-m4v':'video/mp4';
   const prefix=Buffer.from('--'+boundary+'\r\nContent-Disposition: form-data; name="published"\r\n\r\ntrue\r\n'+
     '--'+boundary+'\r\nContent-Disposition: form-data; name="description"\r\n\r\n'+cleanField(job.caption||'')+'\r\n'+
-    '--'+boundary+'\r\nContent-Disposition: form-data; name="source"; filename="video.mp4"\r\nContent-Type: video/mp4\r\n\r\n');
+    '--'+boundary+'\r\nContent-Disposition: form-data; name="source"; filename="'+uploadFilename+'"\r\nContent-Type: '+uploadMime+'\r\n\r\n');
   const suffix=Buffer.from('\r\n--'+boundary+'--\r\n');
   async function* stream(){yield prefix;for await(const chunk of createReadStream(file))yield chunk;yield suffix;}
   let response;

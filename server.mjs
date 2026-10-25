@@ -111,7 +111,7 @@ export function createApp({ dbPath=':memory:', env=process.env, fetchImpl=global
         res.writeHead(200,{'Content-Type':mime,'X-Content-Type-Options':'nosniff','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
         return res.end(src);
       }
-      if (req.method==='GET' && url.pathname==='/api/status') return json(res,200,{ok:true,mode:'LOCAL_ONLY',page_limit:10,meta_configured:!!env.TOOLPAGE_META_USER_TOKEN,live_publish:false,video_automation:videoAutomation.status()});
+      if (req.method==='GET' && url.pathname==='/api/status') return json(res,200,{ok:true,mode:'LOCAL_ONLY',page_limit:10,meta_configured:!!env.TOOLPAGE_META_USER_TOKEN,live_publish:videoAutomation.status().armed && env.TOOLPAGE_LIVE_PUBLISH==='1',video_automation:videoAutomation.status()});
       if (req.method==='GET' && url.pathname==='/api/state') {
         const state=rows(db);
         const q=(url.searchParams.get('q')||'').trim().toLocaleLowerCase('vi');
