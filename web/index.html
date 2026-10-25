@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>toolPage · Facebook Pages Workspace</title>
+<link rel="stylesheet" href="/style.css">
+</head><body>
+<div class="shell">
+<aside class="sidebar">
+ <div class="brand"><div class="brandmark">P</div><div><strong>toolPage</strong><small>Facebook Page Workspace</small></div></div>
+ <div class="sidebar-tag">LOCALHOST · FACEBOOK ONLY</div>
+ <nav aria-label="Danh mục">
+  <button data-view="home" class="navbtn active"><span>▦</span> Tổng quan</button>
+  <details open><summary>◈ Quản lý Page</summary>
+   <button class="navbtn" data-view="pages">Danh sách Page</button>
+   <button class="navbtn" data-view="groups">Nhóm Page</button>
+   <button class="navbtn" data-view="connect">Kết nối Facebook</button>
+  </details>
+  <details open><summary>▤ Nội dung</summary>
+   <button class="navbtn" data-view="drafts">Bài nháp</button>
+   <button class="navbtn muted" data-view="future">Kho nội dung <em>Đề xuất</em></button>
+   <button class="navbtn muted" data-view="future">Lịch đăng <em>Đề xuất</em></button>
+  </details>
+  <details><summary>◎ Tương tác</summary>
+   <button class="navbtn muted" data-view="future">Bình luận / Inbox <em>Sau</em></button>
+   <button class="navbtn muted" data-view="future">Quy tắc trả lời <em>Sau</em></button>
+  </details>
+  <details><summary>⌁ Phân tích</summary>
+   <button class="navbtn muted" data-view="future">Báo cáo Page <em>Sau</em></button>
+   <button class="navbtn muted" data-view="future">Nhật ký hoạt động <em>Sau</em></button>
+  </details>
+ </nav>
+ <div class="bottom"><div class="pulse"></div> Server chỉ chạy 127.0.0.1 <span class="subline">Không tự đăng bài lên Facebook</span></div>
+</aside>
+<main class="main">
+ <header class="topbar"><div><span class="crumb">WORKSPACE / <strong id="crumb">TỔNG QUAN</strong></span></div><div class="headright"><span class="chip" id="meta-chip">META: CHƯA KẾT NỐI</span><span class="avatar">TP</span></div></header>
+ <section class="content">
+  <div class="welcome"><div><p class="overline">FACEBOOK PAGE MANAGEMENT</p><h1 id="view-title">Tổng quan</h1><p id="view-subtitle">Quản lý khoảng 10 Page trong một nơi, không cần Electron.</p></div><span class="pill">LOCAL WORKSPACE v0.1</span></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="home" class="view">
+   <div class="stats">
+    <div class="stat"><span>PAGE ĐÃ LƯU</span><strong id="stat-pages">0</strong><small>Tối đa 10 Page</small></div>
+    <div class="stat"><span>NHÓM PAGE</span><strong id="stat-groups">0</strong><small>Quản lý theo nhóm</small></div>
+    <div class="stat"><span>BẢN NHÁP</span><strong id="stat-drafts">0</strong><small>Chưa đăng ra Facebook</small></div>
+    <div class="stat"><span>LIVE PUBLISH</span><strong>OFF</strong><small>Chưa bật Provider</small></div>
+   </div>
+   <div class="columns"><div class="panel"><div class="panel-title"><h2>Page trong workspace</h2><button class="textlink" data-view="pages">Xem danh sách ›</button></div><div id="home-pages"></div></div>
+   <div class="panel"><div class="panel-title"><h2>Các bước vận hành</h2></div>
+   <div class="checkrow"><b>01</b><div><strong>Tạo hoặc đồng bộ Page</strong><p>Page tạo local chỉ là nhãn, không phải Page đã xác thực.</p></div></div>
+   <div class="checkrow"><b>02</b><div><strong>Chia nhóm và chuẩn bị bài</strong><p>Lưu bản nháp, gắn Page và thời gian dự kiến.</p></div></div>
+   <div class="checkrow"><b>03</b><div><strong>Kết nối Meta có quyền</strong><p>Chỉ khi được cấp phép mới có thể triển khai đăng bài thật.</p></div></div>
+   </div></div>
+  </div>
+  <div id="pages" class="view hidden">
+   <div class="panel"><div class="panel-title"><h2>Danh sách Page</h2><div class="right"><input id="page-search" placeholder="Tìm theo tên / ID" aria-label="Tìm kiếm Page"><span class="mutecount" id="page-count"></span></div></div>
+    <div class="smallnote">Các Page local là bản ghi thử nghiệm, không phải tài khoản Facebook đã đăng nhập.</div>
+    <form id="page-form" class="inline-form"><input id="page-name" placeholder="Tên Page local (tối đa 10)" required maxlength="160"><button class="primary">+ Thêm Page</button></form>
+    <div class="table-wrap"><table><thead><tr><th>Page</th><th>Nguồn</th><th>Nhóm</th><th>Thao tác</th></tr></thead><tbody id="page-rows"></tbody></table></div>
+   </div>
+  </div>
+  <div id="groups" class="view hidden"><div class="panel"><div class="panel-title"><h2>Nhóm Page</h2></div>
+   <form id="group-form" class="inline-form"><input id="group-name" placeholder="Tên nhóm" required maxlength="160"><button class="primary">+ Tạo nhóm</button></form><div id="group-rows"></div></div></div>
+  <div id="connect" class="view hidden"><div class="panel"><div class="panel-title"><h2>Đồng bộ Facebook Pages</h2></div>
+   <p class="bodytext">Dùng Graph API chính thức của Meta để lấy tên và ID Page bạn được phép quản lý. Không dùng cookie, checkpoint, scraping hoặc extension lấy token. Token chỉ được đưa vào biến môi trường ở máy local; không lưu trong Git/SQLite.</p>
+   <div class="notice"><strong id="meta-state">Chưa cấu hình</strong><p>Để bật, đặt <code>TOOLPAGE_META_USER_TOKEN</code> trên máy và khởi động lại server. Cần Meta App và quyền <code>pages_show_list</code> phù hợp. Hiện không có nút đăng bài thật.</p></div>
+   <button id="sync-meta" class="primary">Đồng bộ Page được cấp quyền</button><p class="smallnote">Bản demo này chỉ đồng bộ metadata (tên/ID); không thu thập hoặc lưu Page access token.</p>
+  </div></div>
+  <div id="drafts" class="view hidden"><div class="columns"><div class="panel"><div class="panel-title"><h2>Tạo bản nháp</h2></div>
+   <form id="draft-form" class="stack"><label for="draft-page">Page</label><select id="draft-page" required></select><label for="draft-content">Nội dung</label><textarea id="draft-content" maxlength="10000" rows="7" required placeholder="Viết nội dung của bạn..."></textarea><label for="draft-date">Giờ dự kiến (không tự chạy)</label><input id="draft-date" type="datetime-local"><button class="primary">Lưu bản nháp</button></form></div>
+   <div class="panel"><div class="panel-title"><h2>Bài nháp đã lưu</h2></div><div id="draft-rows"></div></div></div>
+  </div>
+  <div id="future" class="view hidden"><div class="panel"><div class="panel-title"><h2>Chức năng đang chọn phạm vi</h2></div><p class="bodytext">Mục này có trong sơ đồ tính năng nhưng chưa được triển khai. Không hiển thị thao tác giả, không báo thành công giả.</p><p><a href="https://github.com/hoafff/toolPage/blob/main/docs/FEATURE_TREE.md" target="_blank" rel="noreferrer">Xem cây tính năng và phần giữ/bỏ so với LoHaPage</a></p></div></div>
+ </section>
+</main>
+</div><script src="/app.js" defer></script></body></html>
