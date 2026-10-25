@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import {createVideoStore,createVideoAutomation} from './src/video-scheduler.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,11 +61,13 @@ const rows = db => ({
   drafts: db.prepare('SELECT d.*,p.name AS page_name FROM drafts d JOIN pages p ON p.id=d.page_id ORDER BY d.id DESC').all()
 });
 
-export function createApp({ dbPath=':memory:', env=process.env, fetchImpl=globalThis.fetch }={}) {
+export function createApp({ dbPath=':memory:', env=process.env, fetchImpl=globalThis.fetch, clock=Date.now }={}) {
   if (dbPath !== ':memory:') mkdirSync(path.dirname(path.resolve(dbPath)),{recursive:true});
   const db = new DatabaseSync(dbPath);
   schema(db);
-  const graphVersion = /^v\d{2}\.\d$/.test(env.TOOLPAGE_GRAPH_VERSION || '') ? env.TOOLPAGE_GRAPH_VERSION : 'v24.0';
+  const videoStore=createVideoStore({db,clock});
+  const videoAutomation=createVideoAutomation({store:videoStore,env,fetchImpl,clock});
+  const graphVersion = /^v\d{2}\.\d$/.test(env.TOOLPAGE_GRAPH_VERSION || '') ? env.TOOLPAGE_GRAPH_VERSION : 'v26.0';
   async function syncMeta() {
     const token = env.TOOLPAGE_META_USER_TOKEN;
     if (!token) throw err(409,'META_TOKEN_NOT_CONFIGURED');
@@ -108,16 +111,24 @@ export function createApp({ dbPath=':memory:', env=process.env, fetchImpl=global
         res.writeHead(200,{'Content-Type':mime,'X-Content-Type-Options':'nosniff','Cache-Control':'no-store','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
         return res.end(src);
       }
-      if (req.method==='GET' && url.pathname==='/api/status') return json(res,200,{ok:true,mode:'LOCAL_ONLY',page_limit:10,meta_configured:!!env.TOOLPAGE_META_USER_TOKEN,live_publish:false});
+      if (req.method==='GET' && url.pathname==='/api/status') return json(res,200,{ok:true,mode:'LOCAL_ONLY',page_limit:10,meta_configured:!!env.TOOLPAGE_META_USER_TOKEN,live_publish:false,video_automation:videoAutomation.status()});
       if (req.method==='GET' && url.pathname==='/api/state') {
         const state=rows(db);
         const q=(url.searchParams.get('q')||'').trim().toLocaleLowerCase('vi');
         if(q) state.pages=state.pages.filter(p=>p.name.toLocaleLowerCase('vi').includes(q) || p.id.toLowerCase().includes(q));
         return json(res,200,state);
       }
+      if (req.method==='GET' && url.pathname==='/api/video/state') return json(res,200,{configs:videoStore.configs(),jobs:videoStore.jobs(),worker:videoAutomation.status()});
       if (req.method==='GET' && url.pathname==='/api/health') return json(res,200,{ok:true,db:db.prepare('PRAGMA integrity_check').get().integrity_check});
       if (!['POST','PATCH','DELETE'].includes(req.method)) throw err(404,'NOT_FOUND');
       const input=await readPayload(req);
+      if (req.method==='POST' && url.pathname==='/api/video/config') return json(res,200,videoStore.save(input));
+      if (req.method==='POST' && url.pathname==='/api/video/scan') return json(res,200,videoStore.scan());
+      if (req.method==='POST' && url.pathname==='/api/video/arm') return json(res,200,videoAutomation.arm(input));
+      if (req.method==='POST' && url.pathname==='/api/video/disarm') return json(res,200,videoAutomation.disarm());
+      if (req.method==='POST' && url.pathname==='/api/video/tick') return json(res,200,await videoAutomation.tick());
+      const videoCancel=/^\/api\/video\/jobs\/(\d+)\/cancel$/.exec(url.pathname);
+      if (req.method==='POST' && videoCancel) return json(res,200,videoStore.cancel(Number(videoCancel[1])));
       if (req.method==='POST' && url.pathname==='/api/meta/sync') return json(res,200,await syncMeta());
       if (req.method==='POST' && url.pathname==='/api/groups') {
         const name=cleanName(input.name);
@@ -156,6 +167,7 @@ export function createApp({ dbPath=':memory:', env=process.env, fetchImpl=global
         const id=decodeURIComponent(page[1]);
         if(!db.prepare('SELECT 1 FROM pages WHERE id=?').get(id)) throw err(404,'PAGE_NOT_FOUND');
         if(db.prepare('SELECT 1 FROM drafts WHERE page_id=? LIMIT 1').get(id)) throw err(409,'PAGE_HAS_DRAFTS');
+        if(videoStore.config(id) || db.prepare('SELECT 1 FROM video_jobs WHERE page_id=? LIMIT 1').get(id)) throw err(409,'PAGE_HAS_VIDEO_CONFIG_OR_JOBS');
         db.prepare('DELETE FROM pages WHERE id=?').run(id);
         return json(res,200,{ok:true});
       }
@@ -185,12 +197,12 @@ export function createApp({ dbPath=':memory:', env=process.env, fetchImpl=global
     }
   }
   const server=createServer(handler);
-  return {server,db,close:()=>new Promise(resolve=>server.close(()=>{db.close();resolve();}))};
+  return {server,db,videoStore,videoAutomation,close:()=>new Promise(resolve=>{videoAutomation.stop();server.close(()=>{db.close();resolve();});})};
 }
 if (process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const file=process.env.TOOLPAGE_DB || path.join(here,'data','toolpage.sqlite');
   const app=createApp({dbPath:file});
   const port=Number(process.env.TOOLPAGE_PORT||3210);
   if(!Number.isInteger(port) || port<1024 || port>65535) throw new Error('PORT_MUST_BE_1024_TO_65535');
-  app.server.listen(port,'127.0.0.1',()=>console.log('toolPage: http://127.0.0.1:'+port+'  (localhost-only; no live posting)'));
+  app.server.listen(port,'127.0.0.1',()=>{app.videoAutomation.start();console.log('toolPage: http://127.0.0.1:'+port+' (video folder scan active; LIVE requires per-session arming)');});
 }
