@@ -2,7 +2,7 @@
 
 Web app nhỏ cho khoảng **10 Facebook Page** từ Windows localhost; dark sidebar, **không Electron, không Instagram**.
 
-**v0.1:** Page/Group/Draft CRUD dùng SQLite thực, giao diện Web localhost; tùy chọn đồng bộ Page id/name qua Graph API khi owner đã có Meta user token. **Chưa có OAuth trong app, không tự đăng bài, không có worker.**
+**v0.2:** Page/Group/Draft CRUD với SQLite và **Video Auto Scheduler: 1 Page / 1 thư mục video**, queue + worker 30 giây, stream multipart Meta video khi opt-in. **Chưa có OAuth UI; chưa nghiệm thu live posting**.
 
 ## Chạy
 
@@ -34,11 +34,15 @@ npm start
 
 Vào tab Kết nối Facebook, bấm Đồng bộ Page. Server thực hiện GET /me/accounts?fields=id,name,tasks; chỉ lưu Page ID/tên. Không lưu token trong database hoặc UI. Tắt server và xóa biến môi trường khi xong: Remove-Item Env:TOOLPAGE_META_USER_TOKEN.
 
-Chức năng live publishing yêu cầu Page token, quyền pages_manage_posts và kiểm định riêng; **chưa được triển khai**.
+**Video Auto Scheduler**: vào mục mới trên sidebar, chọn Page, đường dẫn folder trên máy Node, giờ đăng Việt Nam, nhập caption. Đăng thật đòi Page token, permission phù hợp, biến môi trường TOOLPAGE_LIVE_PUBLISH=1 và bấm xác nhận trên UI cho mỗi phiên Node. Có Graph upload adapter và kiểm thử synthetic, chưa có owner live acceptance.
 
 ## Bảo mật
 
 Bind loopback, kiểm Host và Origin, custom action header + JSON cho mutation, CSP, no CORS, file DB và .env bỏ khỏi git. Local Page không phải tài khoản Facebook thật.
+
+## Hướng dẫn Video Auto Scheduler
+
+Xem [docs/VIDEO_SCHEDULER.md](docs/VIDEO_SCHEDULER.md) để dùng thư mục riêng từng Page, thiết lập giờ đăng, Page token, và hiểu trạng thái UNCERTAIN chống đăng trùng. Khi Node tắt sẽ không tự đăng. Không dùng cho Reels.
 
 ## Cây chức năng
 

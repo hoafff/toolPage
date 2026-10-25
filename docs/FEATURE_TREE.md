@@ -16,6 +16,9 @@ Tài liệu để owner chọn phạm vi. Đánh dấu [x] là có route/handler
 - **03. Nội dung**
   - [x] Bản nháp theo Page (SQLite CRUD)
   - [x] Thời gian dự kiến lưu trong draft (không có scheduler)
+  - [x] **Video Auto Scheduler mỗi Page một thư mục: scan/slot hằng ngày/queue SQLite/stop và cancel**
+  - [x] **Meta Page Videos upload adapter với Page token + owner confirmation** (mock HTTP test PASS)
+  - [ ] **Kiểm chứng đăng video thật và Meta processing/hiển thị**, OAuth/secure vault
   - [ ] Content Pool/Spintax/CSV TXT import
   - [ ] Media Pool ảnh/video, thư viện và upload Graph
   - [ ] Bulk composer (chọn nhiều Page, xác nhận riêng)
@@ -47,4 +50,4 @@ Tham khảo mô hình logic và test design của LoHaPage: foreign keys SQLite,
 
 ## Quy tắc sản phẩm
 
-Page local chỉ là metadata; Meta Page được đồng bộ id/name qua /me/accounts, không đồng nghĩa có quyền publish. Draft có scheduled_at chỉ là ý định, không chạy. V0.1 không có Graph write call, không gửi Facebook Post/comment và không báo thành công giả.
+Page local chỉ là metadata; Meta Page được đồng bộ id/name qua /me/accounts, không đồng nghĩa có quyền publish. Draft có scheduled_at chỉ là ý định, không chạy. Video Auto Scheduler dùng queue riêng. Chỉ khi opt-in LIVE với Page token và xác nhận mới gọi Meta write. Chưa nghiệm thu live, SUBMITTED chỉ là Meta ACK.
